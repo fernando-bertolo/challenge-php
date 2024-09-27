@@ -1,71 +1,29 @@
-import {
-    Dialog,
-    DialogPanel,
-    Transition,
-    TransitionChild,
-} from '@headlessui/react';
-import { PropsWithChildren } from 'react';
-
-export default function Modal({
-    children,
-    show = false,
-    maxWidth = '2xl',
-    closeable = true,
-    onClose = () => {},
-}: PropsWithChildren<{
-    show: boolean;
-    maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-    closeable?: boolean;
-    onClose: CallableFunction;
-}>) {
-    const close = () => {
-        if (closeable) {
-            onClose();
-        }
-    };
-
-    const maxWidthClass = {
-        sm: 'sm:max-w-sm',
-        md: 'sm:max-w-md',
-        lg: 'sm:max-w-lg',
-        xl: 'sm:max-w-xl',
-        '2xl': 'sm:max-w-2xl',
-    }[maxWidth];
-
+export function Modal(){
     return (
-        <Transition show={show} leave="duration-200">
-            <Dialog
-                as="div"
-                id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
-                onClose={close}
-            >
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="absolute inset-0 bg-gray-500/75" />
-                </TransitionChild>
-
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
-                    <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
-                    >
-                        {children}
-                    </DialogPanel>
-                </TransitionChild>
-            </Dialog>
-        </Transition>
-    );
+        <div className="flex justify-center items-center h-screen">
+            <div x-data="{ open: true }">
+                {/* <!-- Open modal button --> */}
+                <button x-on:click="open = true" className="px-4 py-2 bg-indigo-500 text-white rounded-md"> Open Modal </button>
+                {/* <!-- Modal Overlay --> */}
+                <div x-show="open" className="fixed inset-0 px-2 z-10 overflow-hidden flex items-center justify-center">
+                    <div x-show="open" x-transition:enter="transition-opacity ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                    {/* <!-- Modal Content --> */}
+                    <div x-show="open" x-transition:enter="transition-transform ease-out duration-300" x-transition:enter-start="transform scale-75" x-transition:enter-end="transform scale-100" x-transition:leave="transition-transform ease-in duration-300" x-transition:leave-start="transform scale-100" x-transition:leave-end="transform scale-75" className="bg-white rounded-md shadow-xl overflow-hidden max-w-md w-full sm:w-96 md:w-1/2 lg:w-2/3 xl:w-1/3 z-50">
+                        {/* <!-- Modal Header --> */}
+                        <div className="bg-indigo-500 text-white px-4 py-2 flex justify-between">
+                            <h2 className="text-lg font-semibold">Modal Title</h2>
+                        </div>
+                        {/* <!-- Modal Body --> */}
+                        <div className="p-4">
+                            <p>This is the content of the modal. You can add any content here. Lorem ipsum dolor sit amet</p>
+                        </div>
+                        {/* <!-- Modal Footer --> */}
+                        <div className="border-t px-4 py-2 flex justify-end">
+                            <button x-on:click="open = false" className="px-3 py-1 bg-indigo-500 text-white  rounded-md w-full sm:w-auto"> Accept </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
 }
