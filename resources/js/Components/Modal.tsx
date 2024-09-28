@@ -1,10 +1,10 @@
 import { X } from "lucide-react"
 import { Input } from "./Input"
 import { Select } from "./Select"
-import React, { useState } from "react"
-import {withMask} from "use-mask-input"
+import React, { useEffect, useState } from "react"
 import { Button } from "./Button"
-import { useForm } from "react-hook-form"
+import { FieldValues, useForm, useFieldArray } from "react-hook-form"
+import InputMask from 'react-input-mask'
 
 interface ModalProps {
     handleCloseModal: () => void
@@ -12,22 +12,124 @@ interface ModalProps {
 
 
 
+interface FormData {
+    name: string;
+    email: string;
+    addresses: {
+        address: string;
+        postal_code: string;
+        state: string;
+        district: string;
+        city: string;
+        number: string;
+    }[];
+    phones: {
+        number: string;
+    }[];
+    cpf: string;
+    cnpj: string;
+    rg: string;
+    social_reason: string;
+    fantasy_name: string;
+    type: string
+}
+
+
+
+
+
 export function Modal({handleCloseModal}: ModalProps){
 
     const [selectedType, setSetSelectedType] = useState<string>('')
-    const { register, handleSubmit } = useForm()
+    const {
+        register,
+        handleSubmit,
+        formState: {errors},
+        getValues,
+        setValue,
+        control
+
+    } = useForm<FormData>({
+        defaultValues: {
+            addresses: [{address: "", postal_code: "", state: "", district: "", city: "", number: ""}],
+            phones: [{number: ""}],
+        },
+    });
+
+    // FieldArray para endereços
+    const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
+        control,
+        name: "addresses",
+    });
+
+    // FieldArray para telefones
+    const { fields: phoneFields, append: appendPhone, remove: removePhone } = useFieldArray({
+        control,
+        name: "phones",
+    });
+
 
     const handleFieldDocument = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSetSelectedType(event.target.value)
-
-        // if(event.target.value == 'natural_person'){
-
-        // }
+        event.target.value == 'natural_person' ? setValue('cnpj', '') : setValue('cpf', '');
     }
 
-    function onSubmit(data: any){
+    function onSubmit(data: FieldValues){
         console.log(data)
     }
+
+
+
+    const brazillianStates = [
+        'AC', // Acre
+        'AL', // Alagoas
+        'AP', // Amapá
+        'AM', // Amazonas
+        'BA', // Bahia
+        'CE', // Ceará
+        'DF', // Distrito Federal
+        'ES', // Espírito Santo
+        'GO', // Goiás
+        'MA', // Maranhão
+        'MT', // Mato Grosso
+        'MS', // Mato Grosso do Sul
+        'MG', // Minas Gerais
+        'PA', // Pará
+        'PB', // Paraíba
+        'PR', // Paraná
+        'PE', // Pernambuco
+        'PI', // Piauí
+        'RJ', // Rio de Janeiro
+        'RN', // Rio Grande do Norte
+        'RS', // Rio Grande do Sul
+        'RO', // Rondônia
+        'RR', // Roraima
+        'SC', // Santa Catarina
+        'SP', // São Paulo
+        'SE', // Sergipe
+        'TO'  // Tocantins
+    ];
+
+
+    function requestPostalCode(cep: string, index: number){
+        const cep_without_format = cep.replace(/\D/g, '');
+        const apiViaCep = `https://viacep.com.br/ws/${cep_without_format}/json/`;
+
+        fetch(apiViaCep)
+            .then((response) => response.json())
+            .then((data) => {
+                setValue(`addresses.${index}.address`, data.logradouro, { shouldValidate: true });
+                setValue(`addresses.${index}.district`, data.bairro, { shouldValidate: true });
+                setValue(`addresses.${index}.city`, data.localidade, { shouldValidate: true });
+                setValue(`addresses.${index}.state`, data.uf, { shouldValidate: true });
+            })
+            .catch((error) => {
+                console.error("Erro ao buscar o CEP:", error)
+            });
+    }
+
+
+
 
 
 
@@ -62,27 +164,64 @@ export function Modal({handleCloseModal}: ModalProps){
                                 <X />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit(onSubmit)} className="p-4 flex-1 overflow-auto flex flex-col gap-4">
+
+                        <form className="p-4 flex-1 overflow-auto flex flex-col gap-4">
                             <div className="py-2">
                                 <h1 className="font-bold text-xl">Dados pessoais</h1>
                             </div>
 
                             <div className="flex w-full gap-4">
-                                <Input
-                                    type="text"
-                                    label="Nome"
-                                    placeholder="Digite seu nome"
-                                    {...register('name')}
-                                />
-                                <Input
-                                    type="email"
-                                    label="E-mail"
-                                    placeholder="Digite seu e-mail"
-                                    {...register('email')}
-                                />
+
+
+                                <div className="flex flex-1 flex-col min-w-[20%]">
+                                    <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Nome</label>
+                                    <input
+                                        id="name"
+                                        {...register('name', {
+                                            required: 'O Campo precisa ser preenchido',
+                                            maxLength: {
+                                                value: 255,
+                                                message: 'O nome deve ter no máximo 255 caracteres'
+                                            }
+                                        })}
+                                        className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                    />
+                                    {errors.name && (
+                                        <p className="text-red-500 text-sm mt-1 pl-1">{errors.name?.message as string}</p>
+                                    )}
+                                </div>
+
+
+                                <div className="flex flex-1 flex-col min-w-[20%]">
+                                    <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">E-mail</label>
+                                    <input
+                                        id="email"
+                                        {...register('email', {
+                                            required: "O Campo precisa ser preenchido",
+                                            pattern: {
+                                                value: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g,
+                                                message: 'E-mail inválido'
+                                            }
+                                        })}
+                                        className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                    />
+                                    {errors.email && (
+                                        <p className="text-red-500 text-sm mt-1 pl-1">{errors.email?.message as string}</p>
+                                    )}
+                                </div>
+
                             </div>
+
                             <div className="flex w-full gap-4">
-                                <Select onChange={handleFieldDocument}/>
+                                <div className="flex flex-1 flex-col min-w-[20%]">
+                                    <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Selecione o tipo de pessoa</label>
+
+                                    <select {...register('type')} onChange={handleFieldDocument} className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out">
+                                        <option value="">Ver opções</option>
+                                        <option value="natural_person">Pessoa fisica</option>
+                                        <option value="juridic_person">Pessoa jurídica</option>
+                                    </select>
+                                </div>
 
                                 <div className="flex flex-1 flex-col min-w-[20%]">
                                     <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Envie uma imagem</label>
@@ -91,12 +230,12 @@ export function Modal({handleCloseModal}: ModalProps){
                                     <div className="absolute">
 
                                         <div className="flex flex-col items-center">
-                                        <i className="fa fa-folder-open fa-4x text-blue-700"></i>
-                                        <span className="block text-gray-400 font-normal">50x50</span>
+                                            <i className="fa fa-folder-open fa-4x text-blue-700"></i>
+                                            <span className="block text-gray-400 font-normal">50x50</span>
                                         </div>
                                     </div>
 
-                                    <input type="file" className="h-full w-full opacity-0" name=""/>
+                                    <input type="file" className="h-full w-full opacity-0" {...register('image')}/>
 
                                     </div>
                                 </div>
@@ -106,23 +245,38 @@ export function Modal({handleCloseModal}: ModalProps){
                                 <div className="flex w-full gap-4">
                                     <div className="flex flex-1 flex-col min-w-[20%]">
                                         <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CPF</label>
-                                        <input
+                                        <InputMask
+                                            mask="999.999.999-99"
                                             type="text"
-                                            name="cpf"
-                                            ref={withMask('999.999.999-99')}
+                                            id="cpf"
+                                            {...register('cpf', {
+                                                pattern: {
+                                                    value: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+                                                    message: 'CPF inválido'
+                                                }
+                                            })}
                                             className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
                                         />
-                                        {/* <p className="text-red-500 text-sm mt-1 pl-1">Campo inválido</p> */}
+                                        {errors.cpf && (
+                                            <p className="text-red-500 text-sm mt-1 pl-1">{errors.cpf?.message as string}</p>
+                                        )}
                                     </div>
                                     <div className="flex flex-1 flex-col min-w-[20%]">
                                         <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">RG</label>
-                                        <input
+                                        <InputMask
+                                            mask="99.999.999-9"
                                             type="text"
-                                            name="rg"
-                                            ref={withMask('99.999.999-9')}
+                                            {...register('rg', {
+                                                pattern: {
+                                                    value: /^(\d{1,2}\.?\d{3}\.?\d{3}-?[0-9Xx]{1})$/,
+                                                    message: 'RG inválido'
+                                                }
+                                            })}
                                             className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
                                         />
-                                        {/* <p className="text-red-500 text-sm mt-1 pl-1">Campo inválido</p> */}
+                                        {errors.rg && (
+                                            <p className="text-red-500 text-sm mt-1 pl-1">{errors.rg?.message as string}</p>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -131,16 +285,24 @@ export function Modal({handleCloseModal}: ModalProps){
                                     <div className="flex w-full gap-4">
                                     <div className="flex flex-1 flex-col min-w-[20%]">
                                         <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CNPJ</label>
-                                        <input
+                                        <InputMask
+                                            mask="99.999.999/9999-99"
                                             type="text"
-                                            name="rg"
-                                            ref={withMask('999.999.999/9999-99')}
+                                            {...register('cnpj', {
+                                                pattern: {
+                                                    value: /^[0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2}$/,
+                                                    message: 'CNPJ inválido'
+                                                }
+                                            })}
                                             className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
                                         />
-                                        {/* <p className="text-red-500 text-sm mt-1 pl-1">Campo inválido</p> */}
+                                        {errors.cnpj && (
+                                            <p className="text-red-500 text-sm mt-1 pl-1">{errors.cnpj?.message as string}</p>
+                                        )}
                                     </div>
                                         <Input
                                             type="text"
+                                            {...register('social_reason')}
                                             label="Razão Social"
                                             placeholder="Company tech."
                                         />
@@ -148,6 +310,7 @@ export function Modal({handleCloseModal}: ModalProps){
                                     <div className="flex w-full gap-4">
                                         <Input
                                             type="text"
+                                            {...register('fantasy_name')}
                                             label="Nome Fantasia"
                                             placeholder="Company tech LTDA"
                                         />
@@ -157,39 +320,195 @@ export function Modal({handleCloseModal}: ModalProps){
 
                             <div className="py-2 flex justify-between">
                                 <h1 className="font-bold text-xl">Contato</h1>
-                                <Button type="submit" textButton="Adicionar Telefone"/>
+                                <Button type="button" textButton="Adicionar Telefone" onClick={() => appendPhone({ number: "" })}/>
                             </div>
 
-                            <div className="flex w-full gap-4 justify-center items-end">
-                                <div className="flex flex-1  flex-col min-w-[20%]">
-                                    <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Telefone</label>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        ref={withMask('(99) 99999-9999')}
-                                        className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
-                                    />
-                                    {/* <p className="text-red-500 text-sm mt-1 pl-1">Campo inválido</p> */}
-                                </div>
-                            </div>
+                            {phoneFields.map((item, index) => {
+                                return(
+
+                                    <>
+                                        <div className="flex w-full gap-4 justify-center items-end border-b pb-6" key={item.id}>
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Telefone</label>
+                                                <InputMask
+                                                    mask="(99) 99999-9999"
+                                                    id="phone"
+                                                    type="text"
+                                                    {...register(`phones.${index}.number`, {
+                                                        required: 'O campo precisa ser preenchido',
+                                                        pattern: {
+                                                            value: /^\(\d{2}\)\s?\d{5}-\d{4}$/,
+                                                            message: 'Telefone inválido'
+                                                        }
+                                                    })}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.phones?.[index]?.number && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.phones[index].number?.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={() => removePhone(index)}>
+                                            Remover Telefone
+                                        </button>
+                                    </>
+                                )
+                            })}
+
+
 
                             <div className="py-2 flex justify-between">
                                 <h1 className="font-bold text-xl">Endereço</h1>
-                                <Button type="submit" textButton="Adicionar Endereço"/>
+                                <Button
+                                    type="button"
+                                    textButton="Adicionar Endereço"
+                                    onClick={() => appendAddress({
+                                        address: "",
+                                        postal_code: "",
+                                        state: "",
+                                        district: "",
+                                        city: "",
+                                        number: ""
+                                        })}
+                                    />
                             </div>
+
+                            {addressFields.map((item, index) => {
+                                return (
+                                    <div className="flex flex-col gap-4" key={item.id}>
+                                        <div className="flex w-full gap-4">
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CEP</label>
+                                                <InputMask
+                                                    id="postal_code"
+                                                    mask="99.999-999"
+                                                    type="text"
+                                                    {...register(`addresses.${index}.postal_code`, {
+                                                        required: 'O campo precisa ser preenchido'
+                                                    })}
+                                                    onBlur={(event) => {requestPostalCode(event.target.value, index)}}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.addresses?.[index]?.postal_code && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].postal_code?.message}</p>
+                                                )}
+                                            </div>
+
+
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Cidade</label>
+                                                <input
+                                                    id="city"
+                                                    type="text"
+                                                    {...register(`addresses.${index}.city`, {
+                                                        required: 'O campo precisa ser preenchido'
+                                                    })}
+                                                    value={getValues(`addresses.${index}.city`) || ''}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.addresses?.[index]?.city && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].city?.message}</p>
+                                                )}
+                                            </div>
+
+
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Estado</label>
+                                                <select
+                                                    {...register(`addresses.${index}.state`, {
+                                                        validate: (value) => value !== "" || 'O campo precisa ser preenchido'
+                                                    })}
+                                                    value={getValues(`addresses.${index}.state`) || ''}
+                                                    id="state"
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out">
+                                                    <option value="">Selecione o estado</option>
+                                                    {brazillianStates.map((value, index) => {
+                                                        return (
+                                                            <option key={index} value={value}>{value}</option>
+                                                        )
+                                                    })}
+                                                </select>
+                                                {errors?.addresses?.[index]?.state && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].state?.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+
+                                        <div className="flex w-full gap-4 border-b pb-6">
+
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Endereço</label>
+                                                <input
+                                                    id="address"
+                                                    type="text"
+                                                    {...register(`addresses.${index}.address`, {
+                                                        required: 'O campo precisa ser preenchido'
+                                                    })}
+                                                    value={getValues(`addresses.${index}.address`) || ''}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.addresses?.[index]?.address && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].address?.message}</p>
+                                                )}
+                                            </div>
+
+
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Bairro</label>
+                                                <input
+                                                    id="district"
+                                                    type="text"
+                                                    {...register(`addresses.${index}.district`, {
+                                                        required: 'O campo precisa ser preenchido'
+                                                    })}
+                                                    value={getValues(`addresses.${index}.district`) || ''}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.addresses?.[index]?.district && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].district?.message}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-1  flex-col min-w-[20%]">
+                                                <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Número</label>
+                                                <input
+                                                    id="number"
+                                                    type="text"
+                                                    {...register(`addresses.${index}.number`, {
+                                                        required: 'O campo precisa ser preenchido'
+                                                    })}
+                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                />
+                                                {errors?.addresses?.[index]?.number && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].number?.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button type="button" onClick={() => removeAddress(index)}>
+                                            Remover Endereço
+                                        </button>
+                                    </div>
+                                )
+                            })}
+
+
 
 
                         </form>
+
                         <div className="border-t px-4 py-3 flex justify-end">
-                            <button type="submit" className="px-4 py-2 bg-indigo-500 text-white  rounded-md w-full sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={handleSubmit((data) => onSubmit(data))}
+                                className="px-4 py-2 bg-indigo-500 text-white  rounded-md w-full sm:w-auto">
                                 Salvar
                             </button>
                         </div>
-
                     </div>
                 </div>
             </div>
         </div>
-        // <h1>to aqui</h1>
     )
 }

@@ -27,6 +27,6 @@
     "dependencies": {
         "lucide-react": "^0.446.0",
         "react-hook-form": "^7.53.0",
-        "use-mask-input": "^3.4.0"
+        "react-input-mask": "^2.0.4"
     }
 }
