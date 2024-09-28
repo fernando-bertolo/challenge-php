@@ -12,6 +12,7 @@
         "@types/node": "^18.13.0",
         "@types/react": "^18.0.28",
         "@types/react-dom": "^18.0.10",
+        "@types/react-input-mask": "^3.0.5",
         "@vitejs/plugin-react": "^4.2.0",
         "autoprefixer": "^10.4.12",
         "axios": "^1.7.4",
@@ -24,6 +25,8 @@
         "vite": "^5.0"
     },
     "dependencies": {
-        "lucide-react": "^0.446.0"
+        "lucide-react": "^0.446.0",
+        "react-hook-form": "^7.53.0",
+        "use-mask-input": "^3.4.0"
     }
 }

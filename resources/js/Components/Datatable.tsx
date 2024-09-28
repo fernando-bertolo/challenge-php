@@ -1,7 +1,17 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "./Button";
+import { useState } from "react";
+import { Modal } from "./Modal";
 
-export function DataTable() {
+
+interface DataTableProps {
+    handleOpenModal: () => void
+}
+
+export function DataTable({ handleOpenModal }: DataTableProps) {
+
+
+
     return (
         <>
             <div className="flex flex-wrap -mx-3 mb-5">
@@ -14,7 +24,7 @@ export function DataTable() {
                                     <span className="mr-3 font-bold text-dark">Clientes</span>
                                     <span className="mt-1 font-light text-zinc-400 text-lg/normal">Clientes cadastrados na plataforma</span>
                                 </h3>
-                            <Button textButton="Adicionar Cliente" onClick={() => console.log("click!!")} />
+                                <Button textButton="Adicionar Cliente" onClick={handleOpenModal} />
                             </div>
                             {/* <!-- end card header -->
                             <!-- card body  --> */}
@@ -38,7 +48,7 @@ export function DataTable() {
                                                             <img src="https://raw.githubusercontent.com/Loopple/loopple-public-assets/main/riva-dashboard-tailwind/img/img-49-new.jpg" className="w-[50px] h-[50px] inline-block shrink-0 rounded-2xl" alt="" />
                                                         </div>
                                                         <div className="flex flex-col justify-start">
-                                                            <a href="javascript:void(0)" className="mb-1 font-semibold transition-colors duration-200 ease-in-out text-lg/normal text-secondary-inverse hover:text-primary"> Fernando Bertolo </a>
+                                                            <p className="mb-1 font-semibold transition-colors duration-200 ease-in-out text-lg/normal text-secondary-inverse hover:text-primary"> Fernando Bertolo </p>
                                                         </div>
                                                     </div>
                                                 </td>
