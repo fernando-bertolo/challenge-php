@@ -10,4 +10,5 @@ Route::get('/', function () {
 
 Route::post('/clients', [ClientsController::class, 'createClient'])->name('create-clients');
 Route::get('/clients', [ClientsController::class, 'listClient'])->name('list-clients');
+Route::delete('/clients/{id}', [ClientsController::class, 'deleteClient'])->name('delete-clients');
 

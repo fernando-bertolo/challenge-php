@@ -36,4 +36,20 @@ class ClientsModel extends Model
     public function addresses() {
         return $this->hasMany(AddressesModel::class, 'client_id');
     }
+
+
+
+
+
+
+    public function deleteClient($id){
+        $client = self::find($id);
+
+        if ($client) {
+            return $client->delete();
+        }
+
+        return null;
+    }
+
 }

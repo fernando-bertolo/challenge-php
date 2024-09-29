@@ -9,12 +9,11 @@ export default function Home() {
     const [openModal, setOpenModal] = useState<boolean>(false);
 
     function handleOpenModal(){
-        setOpenModal(true);
-        // console.log("to aqui")
+        setOpenModal(true)
     }
 
     function handleCloseModal(){
-        setOpenModal(false);
+        setOpenModal(false)
     }
 
     return (

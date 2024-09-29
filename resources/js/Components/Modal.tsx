@@ -8,6 +8,7 @@ import InputMask from 'react-input-mask'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
+import { Inertia } from "@inertiajs/inertia"
 
 
 interface ModalProps {
@@ -115,11 +116,11 @@ export function Modal({handleCloseModal}: ModalProps){
                     draggable: true,
                     progress: undefined,
                     theme: "light",
-                });
+                })
             } else {
                 toast.success(responseData.message, {
                     position: "top-right",
-                    autoClose: 3000,
+                    autoClose: 2000,
                     hideProgressBar: false,
                     closeOnClick: true,
                     pauseOnHover: true,
@@ -127,6 +128,9 @@ export function Modal({handleCloseModal}: ModalProps){
                     progress: undefined,
                     theme: "light",
                 });
+                setTimeout(() => {
+                    Inertia.visit('/');
+                }, 2500);
             }
             console.log(responseData);
         })

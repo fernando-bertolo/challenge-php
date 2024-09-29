@@ -143,4 +143,15 @@ class ClientsController extends Controller
         return response()->json($clientsModel);
     }
 
+    public function deleteClient(Request $request, $id){
+        $clientsModel = new ClientsModel();
+        $result = $clientsModel->deleteClient($id);
+
+        if ($result) {
+            return response()->json(['message' => 'Cliente excluído com sucesso!'], 200);
+        }
+
+        return response()->json(['message' => 'Cliente não encontrado!'], 404);
+    }
+
 }

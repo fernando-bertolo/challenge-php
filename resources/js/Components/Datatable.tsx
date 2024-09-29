@@ -2,6 +2,8 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "./Button";
 import { useEffect, useState } from "react";
 import { Modal } from "./Modal";
+import { Inertia } from '@inertiajs/inertia';
+import { toast, ToastContainer } from "react-toastify";
 
 
 interface DataTableProps {
@@ -88,13 +90,55 @@ export function DataTable({ handleOpenModal }: DataTableProps) {
             return response.json();
         })
         .then(responseData => {
-            console.log(responseData)
+            // console.log(responseData)
             setDataClients(responseData)
         })
         .catch(error => {
             console.error('Erro:', error)
         });
     },[])
+
+
+    async function deleteClient(id: number){
+
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
+
+        await fetch( `http://localhost:8000/clients/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            }
+        })
+        .then(response => {
+            if(!response.ok) {
+                console.log(response);
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            console.log(responseData)
+            toast.success(responseData.message, {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            })
+            setTimeout(() => {
+                Inertia.visit('/');
+            }, 2500);
+        })
+        .catch(error => {
+            console.error('Erro:', error)
+        });
+    }
 
 
 
@@ -182,7 +226,7 @@ export function DataTable({ handleOpenModal }: DataTableProps) {
                                                             <button className="mr-2">
                                                                 <Pencil size={20} />
                                                             </button>
-                                                            <button>
+                                                            <button onClick={() => deleteClient(item.id)}>
                                                                 <Trash2 size={20} />
                                                             </button>
                                                         </td>
@@ -197,6 +241,7 @@ export function DataTable({ handleOpenModal }: DataTableProps) {
                     </div>
                 </div>
             </div>
+            <ToastContainer />
         </>
     )
 }
