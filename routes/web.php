@@ -9,4 +9,5 @@ Route::get('/', function () {
 });
 
 Route::post('/clients', [ClientsController::class, 'createClient'])->name('create-clients');
+Route::get('/clients', [ClientsController::class, 'listClient'])->name('list-clients');
 

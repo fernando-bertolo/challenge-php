@@ -4,7 +4,7 @@ interface InputProps extends ComponentProps<'input'> {
     label: string
 }
 
-export function Input({label,  ...props  }: InputProps) {
+export function Input({label,  ...props}: InputProps) {
     return (
         <div className="flex flex-1 flex-col min-w-[20%]">
             <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">{label}</label>

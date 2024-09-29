@@ -21,10 +21,19 @@ class ClientsModel extends Model
 
 
     public function naturalPerson(){
-        return $this->hasOne(NaturalPersonModel::class);
+        return $this->hasOne(NaturalPersonModel::class, 'client_id');
     }
 
-    public function juridicPerson(){
-        return $this->hasOne(JuridicPersonModel::class);
+    public function juridicPerson()
+    {
+        return $this->hasOne(JuridicPersonModel::class, 'client_id');
+    }
+
+    public function phones() {
+        return $this->hasMany(PhonesModel::class, 'client_id');
+    }
+
+    public function addresses() {
+        return $this->hasMany(AddressesModel::class, 'client_id');
     }
 }

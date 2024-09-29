@@ -5,21 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JuridicPersonModel extends Model
+class AddressesModel extends Model
 {
     use HasFactory;
-    protected $table = 'juridic_person';
 
+    protected $table = 'addresses';
 
     protected $fillable = [
         'client_id',
-        'cnpj',
-        'social_reason',
-        'fantasy_name',
+        'address',
+        'number',
+        'city',
+        'postal_code',
+        'district',
+        'state'
     ];
 
-    public function client()
-    {
+    public function client(){
         return $this->belongsTo(ClientsModel::class, 'client_id');
     }
 

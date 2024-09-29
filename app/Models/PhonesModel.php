@@ -5,21 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JuridicPersonModel extends Model
+class PhonesModel extends Model
 {
     use HasFactory;
-    protected $table = 'juridic_person';
 
+    protected $table = 'phones';
 
     protected $fillable = [
         'client_id',
-        'cnpj',
-        'social_reason',
-        'fantasy_name',
+        'phone_number'
     ];
 
-    public function client()
-    {
+
+    public function client(){
         return $this->belongsTo(ClientsModel::class, 'client_id');
     }
 

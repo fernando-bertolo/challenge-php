@@ -5,6 +5,10 @@ import React, { useEffect, useState } from "react"
 import { Button } from "./Button"
 import { FieldValues, useForm, useFieldArray } from "react-hook-form"
 import InputMask from 'react-input-mask'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
+
 
 interface ModalProps {
     handleCloseModal: () => void
@@ -24,7 +28,7 @@ interface FormData {
         number: string;
     }[];
     phones: {
-        number: string;
+        phone_number: string;
     }[];
     cpf: string;
     cnpj: string;
@@ -52,7 +56,7 @@ export function Modal({handleCloseModal}: ModalProps){
     } = useForm<FormData>({
         defaultValues: {
             addresses: [{address: "", postal_code: "", state: "", district: "", city: "", number: ""}],
-            phones: [{number: ""}],
+            phones: [{phone_number: ""}],
         },
     });
 
@@ -71,7 +75,14 @@ export function Modal({handleCloseModal}: ModalProps){
 
     const handleFieldDocument = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSetSelectedType(event.target.value)
-        event.target.value == 'natural_person' ? setValue('cnpj', '') : setValue('cpf', '');
+        if(event.target.value == 'natural_person'){
+            setValue('cnpj', '')
+            setValue('social_reason', '')
+            setValue('fantasy_name', '')
+        } else {
+            setValue('cpf', '')
+            setValue('rg', '')
+        }
     }
 
     function onSubmit(data: FieldValues){
@@ -89,14 +100,47 @@ export function Modal({handleCloseModal}: ModalProps){
         })
         .then(response => {
             if(!response.ok) {
-                throw new Error('Erro na requisição');
+                console.log(response);
             }
             return response.json();
         })
         .then(responseData => {
+            if(responseData.errors){
+                toast.error(responseData.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
+            } else {
+                toast.success(responseData.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
+            }
             console.log(responseData);
         })
         .catch(error => {
+            toast.error(error.message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
             console.error('Erro:', error)
         });
     }
@@ -306,44 +350,54 @@ export function Modal({handleCloseModal}: ModalProps){
 
                                 <>
                                     <div className="flex w-full gap-4">
-                                    <div className="flex flex-1 flex-col min-w-[20%]">
-                                        <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CNPJ</label>
-                                        <InputMask
-                                            mask="99.999.999/9999-99"
-                                            type="text"
-                                            {...register('cnpj', {
-                                                pattern: {
-                                                    value: /^[0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2}$/,
-                                                    message: 'CNPJ inválido'
-                                                }
-                                            })}
-                                            className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
-                                        />
-                                        {errors.cnpj && (
-                                            <p className="text-red-500 text-sm mt-1 pl-1">{errors.cnpj?.message as string}</p>
-                                        )}
-                                    </div>
-                                        <Input
-                                            type="text"
-                                            {...register('social_reason')}
-                                            label="Razão Social"
-                                            placeholder="Company tech."
-                                        />
+                                        <div className="flex flex-1 flex-col min-w-[20%]">
+                                            <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CNPJ</label>
+                                            <InputMask
+                                                mask="99.999.999/9999-99"
+                                                type="text"
+                                                {...register('cnpj', {
+                                                    pattern: {
+                                                        value: /^[0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2}$/,
+                                                        message: 'CNPJ inválido'
+                                                    }
+                                                })}
+                                                className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                            />
+                                            {errors.cnpj && (
+                                                <p className="text-red-500 text-sm mt-1 pl-1">{errors.cnpj?.message as string}</p>
+                                            )}
+                                        </div>
+
+
+                                        <div className="flex flex-1 flex-col min-w-[20%]">
+                                            <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Razão Social</label>
+                                            <input
+                                                id="social_reason"
+                                                type="text"
+                                                {...register('social_reason')}
+                                                className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="flex w-full gap-4">
-                                        <Input
-                                            type="text"
-                                            {...register('fantasy_name')}
-                                            label="Nome Fantasia"
-                                            placeholder="Company tech LTDA"
-                                        />
+
+
+                                        <div className="flex flex-1 flex-col min-w-[20%]">
+                                            <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Nome Fantasia</label>
+                                            <input
+                                                id="fantasy_name"
+                                                type="text"
+                                                {...register('fantasy_name')}
+                                                className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                            />
+                                        </div>
                                     </div>
                                 </>
                             )}
 
                             <div className="py-2 flex justify-between">
                                 <h1 className="font-bold text-xl">Contato</h1>
-                                <Button type="button" textButton="Adicionar Telefone" onClick={() => appendPhone({ number: "" })}/>
+                                <Button type="button" textButton="Adicionar Telefone" onClick={() => appendPhone({ phone_number: "" })}/>
                             </div>
 
                             {phoneFields.map((item, index) => {
@@ -355,9 +409,9 @@ export function Modal({handleCloseModal}: ModalProps){
                                                 <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Telefone</label>
                                                 <InputMask
                                                     mask="(99) 99999-9999"
-                                                    id="phone"
+                                                    id="phone_number"
                                                     type="text"
-                                                    {...register(`phones.${index}.number`, {
+                                                    {...register(`phones.${index}.phone_number`, {
                                                         required: 'O campo precisa ser preenchido',
                                                         pattern: {
                                                             value: /^\(\d{2}\)\s?\d{5}-\d{4}$/,
@@ -366,8 +420,8 @@ export function Modal({handleCloseModal}: ModalProps){
                                                     })}
                                                     className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
                                                 />
-                                                {errors?.phones?.[index]?.number && (
-                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.phones[index].number?.message}</p>
+                                                {errors?.phones?.[index]?.phone_number && (
+                                                    <p className="text-red-500 text-sm mt-1 pl-1">{errors.phones[index].phone_number?.message}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -532,6 +586,8 @@ export function Modal({handleCloseModal}: ModalProps){
                     </div>
                 </div>
             </div>
+
+            <ToastContainer />
         </div>
     )
 }

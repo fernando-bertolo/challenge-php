@@ -9,6 +9,9 @@ class NaturalPersonModel extends Model
 {
     use HasFactory;
 
+    protected $table = 'natural_person';
+
+
     protected $fillable = [
         'client_id',
         'cpf',
@@ -17,7 +20,7 @@ class NaturalPersonModel extends Model
 
 
     public function client(){
-        return $this->belongsTo(ClientsModel::class);
+        return $this->belongsTo(ClientsModel::class, 'client_id');
     }
 
 }
