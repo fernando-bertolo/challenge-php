@@ -75,7 +75,30 @@ export function Modal({handleCloseModal}: ModalProps){
     }
 
     function onSubmit(data: FieldValues){
-        console.log(data)
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
+        fetch('http://localhost:8000/clients', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if(!response.ok) {
+                throw new Error('Erro na requisição');
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            console.log(responseData);
+        })
+        .catch(error => {
+            console.error('Erro:', error)
+        });
     }
 
 
