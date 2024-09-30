@@ -3,16 +3,21 @@ import { Input } from "./Input"
 import { Select } from "./Select"
 import React, { useEffect, useState } from "react"
 import { Button } from "./Button"
-import { FieldValues, useForm, useFieldArray } from "react-hook-form"
+import { FieldValues, useForm, useFieldArray, Controller } from "react-hook-form"
 import InputMask from 'react-input-mask'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import { Inertia } from "@inertiajs/inertia"
+import { Client } from "./Datatable"
 
 
 interface ModalProps {
-    handleCloseModal: () => void
+    title: string
+    route?: string
+    handleCloseModal?: () => void
+    handleCloseEditModal?: () => void
+    clientId?: number | null
 }
 
 
@@ -43,7 +48,13 @@ interface FormData {
 
 
 
-export function Modal({handleCloseModal}: ModalProps){
+export function Modal({
+    handleCloseModal,
+    handleCloseEditModal,
+    title,
+    route,
+    clientId
+}: ModalProps){
 
     const [selectedType, setSetSelectedType] = useState<string>('')
     const {
@@ -85,6 +96,8 @@ export function Modal({handleCloseModal}: ModalProps){
             setValue('rg', '')
         }
     }
+
+
 
     function onSubmit(data: FieldValues){
         const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
@@ -149,6 +162,122 @@ export function Modal({handleCloseModal}: ModalProps){
         });
     }
 
+    function onSubmitUpdate(data: FieldValues){
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
+        fetch(`http://localhost:8000/clients/${clientId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if(!response.ok) {
+                console.log(response);
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            if(responseData.errors){
+                toast.error(responseData.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                })
+            } else {
+                toast.success(responseData.message, {
+                    position: "top-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
+                setTimeout(() => {
+                    Inertia.visit('/');
+                }, 2500);
+            }
+            console.log(responseData);
+        })
+        .catch(error => {
+            toast.error(error.message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
+            console.error('Erro:', error)
+        });
+    }
+
+    useEffect(() => {
+        if (clientId) {
+            listClientsById(clientId);
+        }
+    }, [clientId]);
+
+
+    const listClientsById = async (id: number) => {
+        const response = await fetch(`http://localhost:8000/clients/${id}`)
+        const data: Client = await response.json()
+
+        setValue('name', data.name)
+        setValue('email', data.email)
+        setValue('type', data.type)
+        if(data.type == 'natural_person' && data.natural_person){
+            setValue('cpf', data.natural_person?.cpf)
+            setValue('rg', data.natural_person?.rg)
+        } else if (data.juridic_person){
+            // const cnpjWithoutMask = data.juridic_person.cnpj.replace(/[^\d]/g, '');
+            setValue('cnpj', data.juridic_person.cnpj)
+            setValue('social_reason', data.juridic_person.social_reason)
+            setValue('fantasy_name', data.juridic_person.fantasy_name)
+        }
+
+
+        if (data.phones && data.phones.length > 0) {
+            const phones: FormData['phones'] = data.phones.map(phone => ({
+                phone_number: phone.phone_number
+            }));
+
+            setValue('phones', phones);
+        } else {
+            setValue('phones', []);
+        }
+
+
+        if (data.addresses && data.addresses.length > 0) {
+            const addresses: FormData['addresses'] = data.addresses.map(address => ({
+                address: address.address,
+                postal_code: address.postal_code,
+                state: address.state,
+                district: address.district,
+                city: address.city,
+                number: address.number
+            }));
+
+            setValue('addresses', addresses);
+        } else {
+            setValue('addresses', []);
+        }
+    }
+
+
 
 
     const brazillianStates = [
@@ -180,6 +309,7 @@ export function Modal({handleCloseModal}: ModalProps){
         'SE', // Sergipe
         'TO'  // Tocantins
     ];
+
 
 
     function requestPostalCode(cep: string, index: number){
@@ -230,8 +360,11 @@ export function Modal({handleCloseModal}: ModalProps){
                         "
                     >
                         <div className="bg-indigo-500 text-white px-4 py-3 flex justify-between">
-                            <h1 className="text-lg font-semibold">Cadastro de clientes</h1>
-                            <button onClick={handleCloseModal}>
+                            <h1 className="text-lg font-semibold">{title}</h1>
+
+                            <button
+                                onClick={route === "create" ? handleCloseModal : handleCloseEditModal}
+                            >
                                 <X />
                             </button>
                         </div>
@@ -356,16 +489,23 @@ export function Modal({handleCloseModal}: ModalProps){
                                     <div className="flex w-full gap-4">
                                         <div className="flex flex-1 flex-col min-w-[20%]">
                                             <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CNPJ</label>
-                                            <InputMask
-                                                mask="99.999.999/9999-99"
-                                                type="text"
-                                                {...register('cnpj', {
+                                            <Controller
+                                                name="cnpj"
+                                                control={control}
+                                                rules={{
+                                                    required: "CNPJ é obrigatório",
                                                     pattern: {
                                                         value: /^[0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2}$/,
-                                                        message: 'CNPJ inválido'
-                                                    }
-                                                })}
-                                                className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                        message: "CNPJ inválido",
+                                                    },
+                                                }}
+                                                render={({ field }) => (
+                                                    <InputMask
+                                                        {...field}
+                                                        mask="99.999.999/9999-99"
+                                                        className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                    />
+                                                )}
                                             />
                                             {errors.cnpj && (
                                                 <p className="text-red-500 text-sm mt-1 pl-1">{errors.cnpj?.message as string}</p>
@@ -401,7 +541,7 @@ export function Modal({handleCloseModal}: ModalProps){
 
                             <div className="py-2 flex justify-between">
                                 <h1 className="font-bold text-xl">Contato</h1>
-                                <Button type="button" textButton="Adicionar Telefone" onClick={() => appendPhone({ phone_number: "" })}/>
+                                <Button type="button" textButton="Adicionar Telefone" onClick={() => appendPhone({ phone_number: "" }, {shouldFocus: false})}/>
                             </div>
 
                             {phoneFields.map((item, index) => {
@@ -411,19 +551,27 @@ export function Modal({handleCloseModal}: ModalProps){
                                         <div className="flex w-full gap-4 justify-center items-end border-b pb-6" key={item.id}>
                                             <div className="flex flex-1  flex-col min-w-[20%]">
                                                 <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">Telefone</label>
-                                                <InputMask
-                                                    mask="(99) 99999-9999"
-                                                    id="phone_number"
-                                                    type="text"
-                                                    {...register(`phones.${index}.phone_number`, {
+
+
+                                                <Controller
+                                                    control={control}
+                                                    name={`phones.${index}.phone_number`}
+                                                    rules={{
                                                         required: 'O campo precisa ser preenchido',
                                                         pattern: {
                                                             value: /^\(\d{2}\)\s?\d{5}-\d{4}$/,
                                                             message: 'Telefone inválido'
                                                         }
-                                                    })}
-                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+                                                    }}
+                                                    render={({ field }) => (
+                                                        <InputMask
+                                                            mask="(99) 99999-9999"
+                                                            {...field}
+                                                            className={`rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out ${errors?.phones?.[index]?.phone_number ? 'border-red-500' : ''}`}
+                                                        />
+                                                    )}
                                                 />
+
                                                 {errors?.phones?.[index]?.phone_number && (
                                                     <p className="text-red-500 text-sm mt-1 pl-1">{errors.phones[index].phone_number?.message}</p>
                                                 )}
@@ -450,6 +598,8 @@ export function Modal({handleCloseModal}: ModalProps){
                                         district: "",
                                         city: "",
                                         number: ""
+                                        }, {
+                                            shouldFocus: false
                                         })}
                                     />
                             </div>
@@ -460,15 +610,21 @@ export function Modal({handleCloseModal}: ModalProps){
                                         <div className="flex w-full gap-4">
                                             <div className="flex flex-1  flex-col min-w-[20%]">
                                                 <label htmlFor="name" className="mb-1 text-gray-700 font-semibold">CEP</label>
-                                                <InputMask
-                                                    id="postal_code"
-                                                    mask="99.999-999"
-                                                    type="text"
-                                                    {...register(`addresses.${index}.postal_code`, {
-                                                        required: 'O campo precisa ser preenchido'
-                                                    })}
-                                                    onBlur={(event) => {requestPostalCode(event.target.value, index)}}
-                                                    className="rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out"
+
+                                                <Controller
+                                                    control={control}
+                                                    name={`addresses.${index}.postal_code`}
+                                                    rules={{
+                                                        required: 'O campo precisa ser preenchido',
+                                                    }}
+                                                    render={({ field }) => (
+                                                    <InputMask
+                                                        mask="99.999-999"
+                                                        {...field}
+                                                        onBlur={(event) => {requestPostalCode(event.target.value, index)}}
+                                                        className={`rounded-md border border-gray-300 p-2 focus:border focus:border-indigo-500 focus:ring-indigo-500 transition duration-200 ease-in-out ${errors?.phones?.[index]?.phone_number ? 'border-red-500' : ''}`}
+                                                    />
+                                                    )}
                                                 />
                                                 {errors?.addresses?.[index]?.postal_code && (
                                                     <p className="text-red-500 text-sm mt-1 pl-1">{errors.addresses[index].postal_code?.message}</p>
@@ -582,7 +738,7 @@ export function Modal({handleCloseModal}: ModalProps){
                         <div className="border-t px-4 py-3 flex justify-end">
                             <button
                                 type="button"
-                                onClick={handleSubmit((data) => onSubmit(data))}
+                                onClick={handleSubmit((data) => route === "create" ? onSubmit(data) : onSubmitUpdate(data))}
                                 className="px-4 py-2 bg-indigo-500 text-white  rounded-md w-full sm:w-auto">
                                 Salvar
                             </button>

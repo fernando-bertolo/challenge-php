@@ -8,6 +8,7 @@ use App\Models\JuridicPersonModel;
 use App\Models\NaturalPersonModel;
 use App\Models\PhonesModel;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ClientsController extends Controller
 {
@@ -20,56 +21,29 @@ class ClientsController extends Controller
 
 
 
+        $client = (new ClientsModel)->createClient($request);
+        // dd($client);
 
-        $client = ClientsModel::create([
-            'name' => $request->get('name'),
-            'email' => $request->get('email'),
-            'type' => $request->get('type'),
-            'pathImage' => '',
-        ]);
+
 
         if($request['type'] == 'natural_person'){
-            NaturalPersonModel::create([
-                'client_id' => $client->id,
-                'cpf' => $request->get('cpf'),
-                'rg' => $request->get('rg'),
-            ]);
+            $naturalPersonModel = new NaturalPersonModel();
+            $naturalPersonModel->createNaturalPerson($request, $client->id);
         }
 
         if($request['type'] == 'juridic_person'){
-            JuridicPersonModel::create([
-                'client_id' => $client->id,
-                'cnpj' => $request->get('cnpj'),
-                'social_reason' => $request->get('social_reason'),
-                'fantasy_name' => $request->get('fantasy_name')
-            ]);
+            $juridicPersonModel = new JuridicPersonModel();
+            $juridicPersonModel->createJuridicPerson($request, $client->id);
         }
 
 
         $phones_array = $request->get('phones');
-        // dd($phones_array);
-        $phoneModel = new PhonesModel();
-        foreach($phones_array as $phones){
-            $phoneModel->create([
-                'client_id' => $client->id,
-                'phone_number' => $phones['phone_number']
-            ]);
-        }
+        $phonesModel = new PhonesModel();
+        $phonesModel->createPhone($phones_array, $client->id);
 
         $addressesArray = $request->get('addresses');
-        // dd($addressesArray);
         $addressesModel = new AddressesModel();
-        foreach ($addressesArray as $address) {
-            $addressesModel->create([
-                'client_id' => $client->id,
-                'address' => $address['address'],
-                'postal_code' => $address['postal_code'],
-                'state' => $address['state'],
-                'district' => $address['district'],
-                'city' => $address['city'],
-                'number' => $address['number'],
-            ]);
-        }
+        $addressesModel->createAddresses($addressesArray, $client->id);
 
 
         return response()->json([
@@ -78,21 +52,28 @@ class ClientsController extends Controller
             'status' => true
         ], 201);
     }
-    public function validateDataClient(Request $request)
+    public function validateDataClient(Request $request, $clientId = null)
     {
 
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:clients,email',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('clients', 'email')->ignore($clientId), // Ignorar o e-mail do cliente atual na validação
+            ],
             'type' => 'required|in:natural_person,juridic_person',
             'pathImage' => 'nullable|string',
             'cpf' => [
                 'nullable',
                 'string',
                 'max:14',
-                function ($attribute, $value, $fail) use ($request) {
+                function ($attribute, $value, $fail) use ($request, $clientId) {
                     if ($request->type === 'natural_person') {
-                        $exists = \DB::table('natural_person')->where('cpf', $value)->exists();
+                        $exists = \DB::table('natural_person')
+                            ->where('cpf', $value)
+                            ->where('client_id', '!=', $clientId) // Ignorar o CPF do cliente atual
+                            ->exists();
                         if ($exists) {
                             $fail('Por favor, cadastre outro CPF.');
                         }
@@ -104,9 +85,12 @@ class ClientsController extends Controller
                 'nullable',
                 'string',
                 'max:18',
-                function ($attribute, $value, $fail) use ($request) {
+                function ($attribute, $value, $fail) use ($request, $clientId) {
                     if ($request->type === 'juridic_person') {
-                        $exists = \DB::table('juridic_person')->where('cnpj', $value)->exists();
+                        $exists = \DB::table('juridic_person')
+                            ->where('cnpj', $value)
+                            ->where('client_id', '!=', $clientId) // Ignorar o CNPJ do cliente atual
+                            ->exists();
                         if ($exists) {
                             $fail('Por favor, cadastre outro CNPJ.');
                         }
@@ -139,8 +123,9 @@ class ClientsController extends Controller
     }
 
     public function listClient(Request $request){
-        $clientsModel = ClientsModel::with(['addresses', 'juridicPerson', 'naturalPerson', 'phones'])->get();
-        return response()->json($clientsModel);
+        $clientsModel = new ClientsModel();
+        $dataClients = $clientsModel->getClients();
+        return response()->json($dataClients);
     }
 
     public function deleteClient(Request $request, $id){
@@ -153,5 +138,51 @@ class ClientsController extends Controller
 
         return response()->json(['message' => 'Cliente não encontrado!'], 404);
     }
+
+
+    public function updateClient(Request $request, $id){
+        $this->validateDataClient($request, $id);
+
+        $clientModel = new ClientsModel();
+        $client = $clientModel->updateCliente($request, $id);
+
+
+        if($request['type'] == 'natural_person'){
+            $naturalPersonModel = new NaturalPersonModel();
+            $naturalPersonModel->updateNaturalPerson($request, $client->id);
+        }
+
+        if($request['type'] == 'juridic_person'){
+            $juridicPersonModel = new JuridicPersonModel();
+            $juridicPersonModel->updateJuridicPerson($request, $client->id);
+        }
+
+
+
+
+        $phones_array = $request->get('phones');
+        $phonesModel = new PhonesModel();
+        $phonesModel->updatePhone($phones_array, $client->id);
+
+        $addressesArray = $request->get('addresses');
+        $addressesModel = new AddressesModel();
+        $addressesModel->updateAddresses($addressesArray, $client->id);
+
+
+
+        return response()->json([
+            'message' => 'Cliente alterado com sucesso!!',
+            'status' => true
+        ], 201);
+
+    }
+
+    public function listClientsById(Request $request, $id){
+        $clientModel = new ClientsModel();
+        $dataClient = $clientModel->getClientById($id);
+
+        return response()->json(($dataClient));
+    }
+
 
 }

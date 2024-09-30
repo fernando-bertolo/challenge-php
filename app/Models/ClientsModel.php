@@ -20,6 +20,7 @@ class ClientsModel extends Model
     ];
 
 
+    // Relations between tables
     public function naturalPerson(){
         return $this->hasOne(NaturalPersonModel::class, 'client_id');
     }
@@ -39,11 +40,58 @@ class ClientsModel extends Model
 
 
 
+    // Operations in database
 
+    public function createClient($request){
+        $client = $this->create([
+            'name' => $request->get('name'),
+            'email' => $request->get('email'),
+            'type' => $request->get('type'),
+            'pathImage' => '',
+        ]);
+
+        return $client;
+    }
+
+    public function updateCliente($request, $id)
+    {
+
+        $client = $this->find($id);
+
+
+        if (!$client) {
+            return response()->json(['error' => 'Cliente não encontrado.'], 404);
+        }
+
+
+        $client->update([
+            'name' => $request->get('name'),
+            'email' => $request->get('email'),
+            'type' => $request->get('type'),
+            'pathImage' => $request->get('pathImage') ?? '',
+        ]);
+
+
+        return $client;
+    }
+
+    public function getClients(){
+        $clients = $this->with(['addresses', 'juridicPerson', 'naturalPerson', 'phones'])->get();
+        if($clients){
+            return $clients;
+        }
+
+        return null;
+    }
+
+    public function getClientById($id){
+        $client = $this->with(['addresses', 'juridicPerson', 'naturalPerson', 'phones'])->where('id', $id)->first();
+        return $client;
+    }
 
 
     public function deleteClient($id){
-        $client = self::find($id);
+        $client = $this->find($id);
 
         if ($client) {
             return $client->delete();

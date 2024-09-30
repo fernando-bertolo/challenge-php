@@ -7,7 +7,8 @@ import { toast, ToastContainer } from "react-toastify";
 
 
 interface DataTableProps {
-    handleOpenModal: () => void
+    handleOpenModal?: () => void
+    handleOpenEditModal?: (id: number) => void
 }
 
 interface Addresses {
@@ -50,7 +51,7 @@ interface Phones {
     updated_at: string
 }
 
-interface Client {
+export interface Client {
     id: number
     name: string
     email: string
@@ -66,7 +67,7 @@ interface Client {
 
 
 
-export function DataTable({ handleOpenModal }: DataTableProps) {
+export function DataTable({ handleOpenModal, handleOpenEditModal }: DataTableProps) {
 
     const [dataClients, setDataClients] = useState<Client[]>([])
 
@@ -139,8 +140,6 @@ export function DataTable({ handleOpenModal }: DataTableProps) {
             console.error('Erro:', error)
         });
     }
-
-
 
 
     return (
@@ -223,7 +222,7 @@ export function DataTable({ handleOpenModal }: DataTableProps) {
                                                             </span>
                                                         </td>
                                                         <td className="p-3 pr-0 text-end">
-                                                            <button className="mr-2">
+                                                            <button className="mr-2" onClick={() => handleOpenEditModal?.(item.id)}>
                                                                 <Pencil size={20} />
                                                             </button>
                                                             <button onClick={() => deleteClient(item.id)}>
